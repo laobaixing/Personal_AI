@@ -1,1 +1,275 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Personal Assistant</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            font-size: 18px;
+            line-height: 1.5;
+            background-color: #f4f4f4;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 0;
+            padding: 20px;
+        }
+
+        #chat-wrapper {
+            width: 80%;
+            max-width: 1200px;
+            margin-top: 20px;
+            padding: 20px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            border-radius: 10px;
+            overflow: hidden;
+            background-color: white;
+        }
+
+        #chat-container {
+            border: none;
+            padding: 20px;
+            height: 500px;
+            background-color: white;
+            overflow-y: auto;
+            box-sizing: border-box;
+        }
+
+        #chat-container .message {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 10px;
+        }
+
+        .user-message, .bot-message, .best-answer-message {
+            background-color: #e9ecef;
+            text-align: left;
+            margin-left: 10px;
+            margin-right: auto;
+            max-width: 85%;
+            word-wrap: break-word;
+        }
+
+        .user-message {
+            background-color: #007bff;
+            color: white;
+            text-align: right;
+            margin-left: auto;
+            margin-right: 10px;
+        }
+
+        #input-container, #best-answer-container {
+            display: flex;
+            border-top: 1px solid #ccc;
+            background-color: #fff;
+            padding: 10px;
+        }
+
+        #user-input, #best-answer-input {
+            flex-grow: 1;
+            padding: 15px;
+            font-size: 16px;
+            line-height: 1.5;
+            border: 1px solid #ccc;
+            outline: none;
+            border-radius: 10px;
+            resize: none;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        #send-button, #save-best-answer-button, #save-history-button, #load-history-button {
+            padding: 10px 15px;
+            background-color: #007bff;
+            color: white;
+            font-size: 14px;
+            border: none;
+            cursor: pointer;
+            border-radius: 5px;
+            margin: 0 5px;
+            transition: background-color 0.3s ease;
+        }
+
+        #send-button:hover, #save-best-answer-button:hover, #save-history-button:hover, #load-history-button:hover {
+            background-color: #0056b3;
+        }
+
+        #button-container {
+            display: flex;
+            justify-content: center;
+            width: 100%;
+            margin-top: 10px;
+        }
+
+        #logo {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        #logo img {
+            height: 50px;
+            margin-right: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div id="logo">
+        <img src="{{ url_for('static', filename='logo.webp') }}" alt="Personal Assistant Logo">
+        <h1>Personal Assistant</h1>
+    </div>
+    <div id="button-container">
+        <button id="save-history-button" class="history-button">Save History</button>
+        <button id="load-history-button" class="history-button">Load History</button>
+        <button id="save-best-answer-button">Save The Best Answer</button>
+    </div>
+    <div id="chat-wrapper">
+        <div id="chat-container"></div>
+        <div id="input-container">
+            <textarea id="user-input" placeholder="Type your message..." rows="1"></textarea>
+            <button id="send-button"><i class="fas fa-paper-plane"></i></button>
+        </div>
+        <div id="best-answer-container" style="padding: 10px; width: 100%; box-sizing: border-box;">
+            <textarea id="best-answer-input" placeholder="Input best answer here..." rows="1" style="width: 100%;"></textarea>
+        </div>
+    </div>
+
+    <script>
+        $(document).ready(function() {
+            $("#send-button").click(function() {
+                sendMessage();
+            });
+
+            $("#save-history-button").click(function() {
+                saveChatHistory();
+            });
+
+            $("#load-history-button").click(function() {
+                loadChatHistory();
+            });
+
+            $("#save-best-answer-button").click(function() {
+                saveBestAnswer();
+            });
+
+            $("#user-input").keypress(function(event) {
+                if (event.which === 13 && !event.shiftKey) {
+                    event.preventDefault();
+                    let textarea = $(this);
+                    let value = textarea.val();
+                    let start = textarea.prop("selectionStart");
+                    let end = textarea.prop("selectionEnd");
+                    let newValue = value.substring(0, start) + "\n" + value.substring(end);
+                    textarea.val(newValue);
+                    textarea.prop("selectionStart", start + 1);
+                    textarea.prop("selectionEnd", start + 1);
+                }
+            });
+
+            // Adjust input height dynamically
+            $('#user-input').on('input', function() {
+                this.style.height = 'auto';
+                this.style.height = (this.scrollHeight) + 'px';
+            });
+
+            function sendMessage() {
+                var userMessage = $("#user-input").val().trim();
+                if (userMessage === "") {
+                    return;
+                }
+
+                addMessage(userMessage, 'user');
+                $("#user-input").val("").height('auto');
+
+                $.ajax({
+                    type: "POST",
+                    url: "/chat",
+                    data: { user_message: userMessage },
+                    success: function(data) {
+                        if (data.error) {
+                            addMessage(data.error, 'bot', true);
+                        } else {
+                            addMessage(data.bot_message, 'bot');
+                        }
+                    },
+                    error: function(jqXHR, textStatus, errorThrown) {
+                        console.error("AJAX Error:", textStatus, errorThrown);
+                        var errorMessage = "An error occurred. Please try again later.";
+                        if (jqXHR.responseJSON && jqXHR.responseJSON.error) {
+                            errorMessage = jqXHR.responseJSON.error;
+                        }
+                        addMessage(errorMessage, 'bot', true);
+                    }
+                });
+            }
+
+            function addMessage(message, sender, isError = false) {
+                var messageClass = sender === 'user' ? 'user-message' : 'bot-message';
+                if (isError) {
+                    messageClass = 'error-message';
+                }
+
+                var formattedMessage = $("<div>").text(message).html().replace(/\n/g, "<br>");
+                $("#chat-container").append("<div class='message " + messageClass + "'><b>" + (sender === 'user' ? 'You' : 'Chatbot') + ":</b> " + formattedMessage + "</div>");
+                $("#chat-container").scrollTop($("#chat-container")[0].scrollHeight);
+            }
+
+            function saveChatHistory() {
+                $.ajax({
+                    type: "POST",
+                    url: "/save_history",
+                    success: function(response) {
+                        alert("Chat history saved successfully!");
+                    },
+                    error: function() {
+                        alert("Failed to save chat history.");
+                    }
+                });
+            }
+
+            function loadChatHistory() {
+                $.ajax({
+                    type: "POST",
+                    url: "/load_history",
+                    success: function(response) {
+                        alert("Chat history loaded successfully!");
+                        if (response.chat_history) {
+                            $("#chat-container").empty();
+                            $.each(response.chat_history, function(i, entry) {
+                                addMessage(entry.content, entry.role);
+                            });
+                        }
+                    },
+                    error: function() {
+                        alert("Failed to load chat history.");
+                    }
+                });
+            }
+
+            function saveBestAnswer() {
+                var bestAnswer = $("#best-answer-input").val().trim();
+                if (!bestAnswer) {
+                    alert("No best answer provided!");
+                    return;
+                }
+                $.ajax({
+                    type: "POST",
+                    url: "/save_best_answer",
+                    data: JSON.stringify({ best_answer: bestAnswer }),
+                    contentType: "application/json",
+                    success: function(response) {
+                        alert("Best answer saved successfully!");
+                    },
+                    error: function() {
+                        alert("Failed to save the best answer.");
+                    }
+                });
+            }
+        });
+    </script>
+
+</body>
+</html>
 
