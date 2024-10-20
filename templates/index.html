@@ -123,6 +123,7 @@
     <div id="button-container">
         <button id="save-history-button" class="history-button">Save History</button>
         <button id="load-history-button" class="history-button">Load History</button>
+        <input type="file" id="history-file-input" style="display: none;">
         <button id="save-best-answer-button">Save The Best Answer</button>
     </div>
     <div id="chat-wrapper">
@@ -147,7 +148,11 @@
             });
 
             $("#load-history-button").click(function() {
-                loadChatHistory();
+                $("#history-file-input").click();  // Trigger file input click
+            });
+
+            $("#history-file-input").change(function() {
+                loadChatHistory(this.files[0]);  // Pass the selected file to loadChatHistory
             });
 
             $("#save-best-answer-button").click(function() {
@@ -229,10 +234,16 @@
                 });
             }
 
-            function loadChatHistory() {
+            function loadChatHistory(file) {
+                var formData = new FormData();
+                formData.append("history_file", file);
+
                 $.ajax({
                     type: "POST",
                     url: "/load_history",
+                    data: formData,
+                    processData: false,
+                    contentType: false,
                     success: function(response) {
                         alert("Chat history loaded successfully!");
                         if (response.chat_history) {

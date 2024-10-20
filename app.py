@@ -61,17 +61,20 @@ def save_history():
 
 @app.route("/load_history", methods=["POST"])
 def load_history():
-    if os.path.exists("chat_history.pkl"):
-        try:
-            with open("chat_history.pkl", "rb") as file:
-                load_history = pickle.load(file)
-                chat_session._history = load_history
-            return jsonify({"status": "success"})  #jsonify({"chat_history": chat_session._history})
-        except Exception as e:
-            print(f"Error loading chat history: {e}")
-            return jsonify({"status": "error"}), 500
-    else:
-        return jsonify({"chat_history": []})
+    if 'history_file' not in request.files:
+        return jsonify({"status": "error", "message": "No file provided"}), 400
+
+    file = request.files['history_file']
+    if file.filename == '':
+        return jsonify({"status": "error", "message": "No selected file"}), 400
+
+    try:
+        load_history = pickle.load(file)
+        chat_session._history = load_history  # Assuming you use chat_session object to store the conversation history
+        return jsonify({"status": "success"})  # Replace with jsonify({"chat_history": chat_session._history}) if needed
+    except Exception as e:
+        print(f"Error loading chat history: {e}")
+        return jsonify({"status": "error", "message": str(e)}), 500
 
 @app.route("/save_best_answer", methods=["POST"])
 def save_best_answer():
