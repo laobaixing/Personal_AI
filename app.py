@@ -28,6 +28,11 @@ def index():
         chat_session = model.start_chat() # Start a new chat session if one doesn't exist
     return render_template("index.html")
 
+@app.route("/new_session", methods=["POST"])
+def new_session():
+    global chat_session
+    chat_session = model.start_chat() # Start a new chat session
+    return jsonify({"message": "New session started"})
 
 @app.route("/chat", methods=["POST"]) # Now exclusively for chat messages
 def chat():

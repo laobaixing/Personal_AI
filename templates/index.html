@@ -80,7 +80,7 @@
             box-sizing: border-box;
         }
 
-        #send-button, #save-best-answer-button, #save-history-button, #load-history-button {
+        #send-button, #new-session-button, #save-best-answer-button, #save-history-button, #load-history-button {
             padding: 10px 15px;
             background-color: #007bff;
             color: white;
@@ -121,6 +121,7 @@
         <h1>Personal Assistant</h1>
     </div>
     <div id="button-container">
+        <button id="new-session-button">New Session</button>
         <button id="save-history-button" class="history-button">Save History</button>
         <button id="load-history-button" class="history-button">Load History</button>
         <input type="file" id="history-file-input" style="display: none;">
@@ -143,6 +144,9 @@
                 sendMessage();
             });
 
+            $("#new-session-button").click(function() {
+                startNewSession(); // Call the new function
+            });
             $("#save-history-button").click(function() {
                 saveChatHistory();
             });
@@ -219,6 +223,20 @@
                 var formattedMessage = $("<div>").text(message).html().replace(/\n/g, "<br>");
                 $("#chat-container").append("<div class='message " + messageClass + "'><b>" + (sender === 'user' ? 'You' : 'Chatbot') + ":</b> " + formattedMessage + "</div>");
                 $("#chat-container").scrollTop($("#chat-container")[0].scrollHeight);
+            }
+
+            function startNewSession() {
+                $.ajax({
+                    type: "POST",
+                    url: "/new_session",
+                    success: function(response) {
+                        $("#chat-container").empty();
+                        alert("New session started!");
+                },
+                    error: function() {
+                        alert("Failed to start a new session.");
+                }
+                });
             }
 
             function saveChatHistory() {
