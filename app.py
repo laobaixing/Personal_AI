@@ -9,8 +9,8 @@ from vertexai.generative_models import GenerationConfig, GenerativeModel
 app = Flask(__name__)
 
 # Configure Vertex AI
-PROJECT_ID = "acv-data"  # Replace with your Google Cloud project ID
-LOCATION = "us-central1"  # Replace with your model's location
+PROJECT_ID = ""  # Replace with your Google Cloud project ID
+LOCATION = ""  # Replace with your model's location
 MODEL_NAME = "gemini-1.5-pro-002"  # Or another Gemini model name
 
 vertexai.init(project=PROJECT_ID, location=LOCATION)
