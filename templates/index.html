@@ -226,16 +226,24 @@
             }
 
             function startNewSession() {
+                const selectedLLM = prompt("Select LLM (Gemini or GPT):");
+                if (!selectedLLM || (selectedLLM !== "Gemini" && selectedLLM !== "GPT")) {
+                    alert("Invalid selection. Please enter 'Gemini' or 'GPT'.");
+                    return;
+                }
+
                 $.ajax({
                     type: "POST",
                     url: "/new_session",
+                    contentType: "application/json",
+                    data: JSON.stringify({ llm: selectedLLM }),
                     success: function(response) {
                         $("#chat-container").empty();
-                        alert("New session started!");
-                },
-                    error: function() {
-                        alert("Failed to start a new session.");
-                }
+                        alert(response.message);
+                    },
+                    error: function(jqXHR) {
+                        alert("Failed to start a new session: " + jqXHR.responseJSON.error);
+                    }
                 });
             }
 
