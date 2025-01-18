@@ -156,7 +156,10 @@
             });
 
             $("#history-file-input").change(function() {
-                loadChatHistory(this.files[0]);  // Pass the selected file to loadChatHistory
+                var file = this.files[0];
+                if (file) {
+                    loadChatHistory(file);
+                }
             });
 
             $("#save-best-answer-button").click(function() {
@@ -272,15 +275,15 @@
                     contentType: false,
                     success: function(response) {
                         alert("Chat history loaded successfully!");
-                        if (response.chat_history) {
+                        if (response.history) {
                             $("#chat-container").empty();
-                            $.each(response.chat_history, function(i, entry) {
-                                addMessage(entry.content, entry.role);
+                            response.history.forEach(function(entry) {
+                                addMessage(entry.content, entry.role === "user" ? "user" : "bot");
                             });
                         }
                     },
-                    error: function() {
-                        alert("Failed to load chat history.");
+                    error: function(jqXHR) {
+                        alert("Failed to load chat history: " + jqXHR.responseJSON.message);
                     }
                 });
             }

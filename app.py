@@ -129,12 +129,18 @@ def load_history():
 
         if current_model == "Gemini":
             chat_session._history = loaded_history
+            history_content = [
+                {"role": entry.role, "content": part.text}
+                for entry in loaded_history
+                for part in entry.parts
+            ]
         elif current_model == "GPT":
             gpt_chat_history = loaded_history
+            history_content = gpt_chat_history
         else:
             return jsonify({"status": "error", "message": "No active session"}), 400
 
-        return jsonify({"status": "success"})
+        return jsonify({"status": "success", "history": history_content})
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
 
