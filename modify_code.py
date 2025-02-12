@@ -4,7 +4,7 @@ import re
 import subprocess
 
 from langchain_core.messages import HumanMessage
-from langchain_openai import ChatOpenAI
+from langchain_google_vertexai import ChatVertexAI
 from langgraph.graph import END, START, StateGraph
 from langgraph.graph.message import add_messages
 from pydantic import BaseModel
@@ -23,10 +23,14 @@ class GraphState(BaseModel):
 
 # Import secrets for Vertex AI and OpenAI
 secret = json.load(open("secret.json"))
-# OpenAI GPT API key
-OPENAI_API_KEY = secret["openai_api_key"]
+PROJECT_ID = secret["project_id"]
+LOCATION = secret["location"]
+MODEL_NAME = "gemini-2.0-pro-exp-02-05"
+
 # Initialize the LLM (this will pick up the OPENAI_API_KEY from the environment)
-llm = ChatOpenAI(model="gpt-4o", temperature=0, openai_api_key=OPENAI_API_KEY)
+llm = ChatVertexAI(
+    project_id=PROJECT_ID, location=LOCATION, model=MODEL_NAME, temperature=0
+)
 
 
 # Node 0: GetPromptNode
