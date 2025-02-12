@@ -16,7 +16,7 @@ secret = json.load(open("secret.json"))
 # Configure Vertex AI
 PROJECT_ID = secret["project_id"]
 LOCATION = secret["location"]
-MODEL_NAME = "gemini-1.5-pro-002"
+MODEL_NAME = "gemini-2.0-pro-exp-02-05"
 
 vertexai.init(project=PROJECT_ID, location=LOCATION)
 
