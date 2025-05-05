@@ -103,6 +103,7 @@ class GraphState(BaseModel):
     save_status: str = ""  # Status message after saving the code
     code_feedback: str = ""  # Status message after saving the code
     execution_result: str = ""  # Output of running the saved code
+    pr_feedback: str = "" # Human feedback on the running results
 
 
 # Import secrets for Vertex AI and OpenAI
@@ -128,10 +129,15 @@ def get_prompt_node(state: GraphState) -> dict:
 # Uses the LLM to break down the instruction and extract actionable steps and a file path.
 def plan_steps_node(state: GraphState) -> dict:
     print("-----plan steps------\n")
+
+    with open("context.txt", "r", encoding="utf-8") as f:
+        context = f.read()
+
     prompt = state.messages[-1].content if state.messages else ""
     plan_prompt = f"""
         Context:
-
+        {context}
+        
         Task:
         Analyze the following instruction and break it down into actionable steps.
         If the instruction involves modifying a file (e.g. 'adding features to a file'),
@@ -290,6 +296,25 @@ def run_code_command_node(state: GraphState) -> dict:
         output = "This is not a python file."
     return {"execution_result": output}
 
+# Node 8: HumanFeedbackPRNode
+def human_feedback_result_node(state: GraphState) -> dict:
+    # Display the extracted plan steps and file path.
+    print("ML code has run")
+    pr_feedback = input("Can we go ahead to send PR? (yes/no): ").strip().lower()
+    state.pr_feedback = pr_feedback
+    return {"pr_feedback": pr_feedback}
+
+# Router function after human feedback on code.
+def result_feedback_router(state: GraphState):
+    if state.pr_feedback.lower() == "yes":
+        return "send_pr_node"
+    else:
+        return "modify_code_node"
+
+# Node 9: send PR to github
+def send_pr_node(state: GraphState) -> dict:
+    pass
+
 
 # Build the workflow graph.
 graph = StateGraph(GraphState)
@@ -331,7 +356,18 @@ graph.add_conditional_edges(
     },
 )
 
-graph.add_edge("run_code_command_node", END)
+graph.add_edge("run_code_command_node", "human_feedback_result_node")
+
+graph.add_conditional_edges(
+    "human_feedback_result_node",
+    code_feedback_router,
+    {
+        "modify_code_node": "modify_code_node",
+        "send_pr_node": "send_pr_node",
+    },
+)
+
+graph.add_edge("send_pr_node", END)
 
 if __name__ == "__main__":
     initial_state = GraphState()
